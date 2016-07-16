@@ -8,11 +8,16 @@ from _Framework.ButtonElement import ButtonElement
 from _Framework.ControlSurface import ControlSurface
 from _Framework.InputControlElement import *
 from _Framework.TransportComponent import TransportComponent
-
 from SongInfoTrack import SongInfoTrack
 
-CHANNEL = 0
+import Live
 
+CHANNEL = 0
+NOTE_OFF_STATUS = 128
+NOTE_ON_STATUS = 144
+
+SCENE_OFFSET = 10
+SCENE_NOTES = range(SCENE_OFFSET, 50)
 
 class SongInfo(ControlSurface):
     __module__ = __name__
@@ -23,6 +28,7 @@ class SongInfo(ControlSurface):
         with self.component_guard():
             self._current_tracks = []
             self._scenes = []
+            self._c_instance = c_instance
             self.setup_scenes()
             self.setup_tracks()
             self.setup_transport_control()
@@ -69,6 +75,22 @@ class SongInfo(ControlSurface):
                 self._current_tracks.append(t)
                 self.register_track(t)
 
+    def build_midi_map(self, midi_map_handle):
+        ControlSurface.build_midi_map(self, midi_map_handle)
+        script_handle = self._c_instance.handle()
+        for cc_no in SCENE_NOTES:
+            Live.MidiMap.forward_midi_note(script_handle, midi_map_handle, 0, cc_no)
+
+    def receive_midi(self, midi_bytes):
+        if midi_bytes[0] & 240 == NOTE_ON_STATUS:
+            note = midi_bytes[1]
+            if note >= SCENE_OFFSET:
+                self._scenes[note - SCENE_OFFSET].fire()
+            else:
+                ControlSurface.receive_midi(self, midi_bytes)
+        else:
+            ControlSurface.receive_midi(self, midi_bytes)
+
     def register_track(self, t):
         if t.name and t.name[0] == '{' and '}' in t.name:
             self.log_message('Track ' + t.name)
@@ -76,6 +98,6 @@ class SongInfo(ControlSurface):
 
     def setup_transport_control(self):
         is_momentary = True
-        transport = TransportComponent()
-        transport.set_play_button(ButtonElement(is_momentary, MIDI_NOTE_TYPE, CHANNEL, 0))
-        transport.set_stop_button(ButtonElement(is_momentary, MIDI_NOTE_TYPE, CHANNEL, 1))
+        self._transport = TransportComponent()
+        self._transport.set_play_button(ButtonElement(is_momentary, MIDI_NOTE_TYPE, CHANNEL, 0))
+        self._transport.set_stop_button(ButtonElement(is_momentary, MIDI_NOTE_TYPE, CHANNEL, 1))
