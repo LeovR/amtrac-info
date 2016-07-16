@@ -22,12 +22,43 @@ class SongInfo(ControlSurface):
         ControlSurface.__init__(self, c_instance)
         with self.component_guard():
             self._current_tracks = []
+            self._scenes = []
+            self.setup_scenes()
             self.setup_tracks()
             self.setup_transport_control()
 
     def disconnect(self):
         self._current_tracks = []
+        self._scenes = []
         ControlSurface.disconnect(self)
+
+    @staticmethod
+    def find_between(s, first, last):
+        try:
+            start = s.index(first) + len(first)
+            end = s.index(last, start)
+            return s[start:end]
+        except ValueError:
+            return ""
+
+    @staticmethod
+    def get_scene_index(scene):
+        number = SongInfo.find_between(scene.name, '{', '}')
+        return number
+
+    def setup_scenes(self):
+        scenes = self.song().scenes
+        registered_scenes = []
+        for scene in scenes:
+            if scene.name and scene.name[0] == '{' and '}' in scene.name:
+                self.log_message('Found scene ' + scene.name)
+                registered_scenes.append(scene)
+        registered_scenes.sort(key=SongInfo.get_scene_index)
+        if registered_scenes:
+            self.log_message('Sorted scenes')
+        for r in registered_scenes:
+            self.log_message('Scene ' + r.name)
+        self._scenes = registered_scenes
 
     def setup_tracks(self):
         for t in self.song().tracks:
@@ -40,7 +71,7 @@ class SongInfo(ControlSurface):
 
     def register_track(self, t):
         if t.name and t.name[0] == '{' and '}' in t.name:
-            self.log_message('Track' + t.name)
+            self.log_message('Track ' + t.name)
             SongInfoTrack(self, t)
 
     def setup_transport_control(self):
