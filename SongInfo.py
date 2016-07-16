@@ -4,9 +4,14 @@
 
 from __future__ import with_statement
 
+from _Framework.ButtonElement import ButtonElement
 from _Framework.ControlSurface import ControlSurface
+from _Framework.InputControlElement import *
+from _Framework.TransportComponent import TransportComponent
 
 from SongInfoTrack import SongInfoTrack
+
+CHANNEL = 0
 
 
 class SongInfo(ControlSurface):
@@ -15,10 +20,10 @@ class SongInfo(ControlSurface):
 
     def __init__(self, c_instance):
         ControlSurface.__init__(self, c_instance)
-        self.log_message('LOG ------- ------- END LOG')
         with self.component_guard():
             self._current_tracks = []
             self.setup_tracks()
+            self.setup_transport_control()
 
     def disconnect(self):
         self._current_tracks = []
@@ -38,3 +43,8 @@ class SongInfo(ControlSurface):
             self.log_message('Track' + t.name)
             SongInfoTrack(self, t)
 
+    def setup_transport_control(self):
+        is_momentary = True
+        transport = TransportComponent()
+        transport.set_play_button(ButtonElement(is_momentary, MIDI_NOTE_TYPE, CHANNEL, 0))
+        transport.set_stop_button(ButtonElement(is_momentary, MIDI_NOTE_TYPE, CHANNEL, 1))
