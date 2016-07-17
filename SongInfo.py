@@ -14,6 +14,7 @@ from _Framework.TransportComponent import TransportComponent
 from ableton.v2.control_surface import midi
 
 from SongInfoTrack import SongInfoTrack
+from SongInfoScene import SongInfoScene
 
 MANUFACTURER_ID = (int("0x7d", 0),)
 MESSAGE_START = (midi.SYSEX_START,) + MANUFACTURER_ID + (1, 1)
@@ -71,6 +72,7 @@ class SongInfo(ControlSurface):
                 self.log_message('Found scene ' + scene.name)
                 index = int(SongInfo.get_scene_index(scene))
                 self._scenes[index - 1] = scene
+                SongInfoScene(self, scene)
         for i, s in sorted(self._scenes.items()):
             self.log_message('Scene ' + str(i) + ' ' + s.name)
 
@@ -115,7 +117,7 @@ class SongInfo(ControlSurface):
         if not self._scenes:
             return
         for i, s in sorted(self._scenes.items()):
-            message_text = '{SC||' + str(i) + '|' + s.name.split('} ', 1)[1]
+            message_text = '{SC||' + str(i) + '|' + (s.name.split('} ', 1)[1]).split(' ||')[0]
             self.log_message(message_text)
             self.send_message(message_text)
 
