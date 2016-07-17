@@ -4,13 +4,13 @@
 
 from __future__ import with_statement
 
+import Live
 from _Framework.ButtonElement import ButtonElement
 from _Framework.ControlSurface import ControlSurface
 from _Framework.InputControlElement import *
 from _Framework.TransportComponent import TransportComponent
-from SongInfoTrack import SongInfoTrack
 
-import Live
+from SongInfoTrack import SongInfoTrack
 
 CHANNEL = 0
 NOTE_OFF_STATUS = 128
@@ -18,6 +18,9 @@ NOTE_ON_STATUS = 144
 
 SCENE_OFFSET = 10
 SCENE_NOTES = range(SCENE_OFFSET, 50)
+
+STOP_MIDI_NOTE = 0
+
 
 class SongInfo(ControlSurface):
     __module__ = __name__
@@ -27,7 +30,7 @@ class SongInfo(ControlSurface):
         ControlSurface.__init__(self, c_instance)
         with self.component_guard():
             self._current_tracks = []
-            self._scenes = []
+            self._scenes = dict()
             self._c_instance = c_instance
             self.setup_scenes()
             self.setup_tracks()
@@ -35,7 +38,7 @@ class SongInfo(ControlSurface):
 
     def disconnect(self):
         self._current_tracks = []
-        self._scenes = []
+        self._scenes = dict()
         ControlSurface.disconnect(self)
 
     @staticmethod
@@ -54,17 +57,13 @@ class SongInfo(ControlSurface):
 
     def setup_scenes(self):
         scenes = self.song().scenes
-        registered_scenes = []
         for scene in scenes:
             if scene.name and scene.name[0] == '{' and '}' in scene.name:
                 self.log_message('Found scene ' + scene.name)
-                registered_scenes.append(scene)
-        registered_scenes.sort(key=SongInfo.get_scene_index)
-        if registered_scenes:
-            self.log_message('Sorted scenes')
-        for r in registered_scenes:
-            self.log_message('Scene ' + r.name)
-        self._scenes = registered_scenes
+                index = int(SongInfo.get_scene_index(scene))
+                self._scenes[index] = scene
+        for i, s in sorted(self._scenes.items()):
+            self.log_message('Scene ' + str(i) + ' ' + s.name)
 
     def setup_tracks(self):
         for t in self.song().tracks:
@@ -78,14 +77,16 @@ class SongInfo(ControlSurface):
     def build_midi_map(self, midi_map_handle):
         ControlSurface.build_midi_map(self, midi_map_handle)
         script_handle = self._c_instance.handle()
-        for cc_no in SCENE_NOTES:
-            Live.MidiMap.forward_midi_note(script_handle, midi_map_handle, 0, cc_no)
+        for midi_no in SCENE_NOTES:
+            Live.MidiMap.forward_midi_note(script_handle, midi_map_handle, 0, midi_no)
 
     def receive_midi(self, midi_bytes):
         if midi_bytes[0] & 240 == NOTE_ON_STATUS:
             note = midi_bytes[1]
             if note >= SCENE_OFFSET:
-                self._scenes[note - SCENE_OFFSET].fire()
+                note_without_offset = note - SCENE_OFFSET
+                if note_without_offset in self._scenes:
+                    self._scenes[note_without_offset].fire()
             else:
                 ControlSurface.receive_midi(self, midi_bytes)
         else:
@@ -99,5 +100,4 @@ class SongInfo(ControlSurface):
     def setup_transport_control(self):
         is_momentary = True
         self._transport = TransportComponent()
-        self._transport.set_play_button(ButtonElement(is_momentary, MIDI_NOTE_TYPE, CHANNEL, 0))
-        self._transport.set_stop_button(ButtonElement(is_momentary, MIDI_NOTE_TYPE, CHANNEL, 1))
+        self._transport.set_stop_button(ButtonElement(is_momentary, MIDI_NOTE_TYPE, CHANNEL, STOP_MIDI_NOTE))
