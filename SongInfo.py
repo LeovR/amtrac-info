@@ -70,7 +70,7 @@ class SongInfo(ControlSurface):
             if scene.name and scene.name[0] == '{' and '}' in scene.name:
                 self.log_message('Found scene ' + scene.name)
                 index = int(SongInfo.get_scene_index(scene))
-                self._scenes[index] = scene
+                self._scenes[index - 1] = scene
         for i, s in sorted(self._scenes.items()):
             self.log_message('Scene ' + str(i) + ' ' + s.name)
 
