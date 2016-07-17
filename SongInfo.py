@@ -41,7 +41,9 @@ class SongInfo(ControlSurface):
             self.setup_scenes()
             self.setup_tracks()
             self.setup_transport_control()
+            self.send_configuration_start()
             self.send_song_configuration()
+            self.send_configuration_finished()
 
     def disconnect(self):
         self._current_tracks = []
@@ -113,9 +115,19 @@ class SongInfo(ControlSurface):
         if not self._scenes:
             return
         for i, s in sorted(self._scenes.items()):
-            message_text = '{C}{' + str(i) + '}{' + s.name.split('} ', 1)[1] + '}'
+            message_text = '{SC||' + str(i) + '|' + s.name.split('} ', 1)[1]
             self.log_message(message_text)
             self.send_message(message_text)
+
+    def send_configuration_start(self):
+        message_text = '{CS|'
+        self.log_message(message_text)
+        self.send_message(message_text)
+
+    def send_configuration_finished(self):
+        message_text = '{CF|'
+        self.log_message(message_text)
+        self.send_message(message_text)
 
     @staticmethod
     def make_message(text):
