@@ -4,13 +4,19 @@
 
 from __future__ import with_statement
 
+from base64 import b64encode
+
 import Live
 from _Framework.ButtonElement import ButtonElement
 from _Framework.ControlSurface import ControlSurface
 from _Framework.InputControlElement import *
 from _Framework.TransportComponent import TransportComponent
+from ableton.v2.control_surface import midi
 
 from SongInfoTrack import SongInfoTrack
+
+MANUFACTURER_ID = (int("0x7d", 0),)
+MESSAGE_START = (midi.SYSEX_START,) + MANUFACTURER_ID + (1, 1)
 
 CHANNEL = 0
 NOTE_OFF_STATUS = 128
@@ -35,6 +41,7 @@ class SongInfo(ControlSurface):
             self.setup_scenes()
             self.setup_tracks()
             self.setup_transport_control()
+            self.send_song_configuration()
 
     def disconnect(self):
         self._current_tracks = []
@@ -101,3 +108,21 @@ class SongInfo(ControlSurface):
         is_momentary = True
         self._transport = TransportComponent()
         self._transport.set_stop_button(ButtonElement(is_momentary, MIDI_NOTE_TYPE, CHANNEL, STOP_MIDI_NOTE))
+
+    def send_song_configuration(self):
+        if not self._scenes:
+            return
+        for i, s in sorted(self._scenes.items()):
+            message_text = '{C}{' + str(i) + '}{' + s.name.split('} ', 1)[1] + '}'
+            self.log_message(message_text)
+            self.send_message(message_text)
+
+    @staticmethod
+    def make_message(text):
+        arr = map(ord, b64encode(text.encode('utf-8')))
+        return MESSAGE_START + tuple(arr) + (midi.SYSEX_END,)
+
+    def send_message(self, message_text):
+        sysex_message = self.make_message(message_text)
+        self.log_message(str(sysex_message))
+        self._send_midi(sysex_message)
