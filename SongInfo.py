@@ -15,6 +15,7 @@ from ableton.v2.control_surface import midi
 
 from SongInfoTrack import SongInfoTrack
 from SongInfoScene import SongInfoScene
+from SongInfoSceneSignaturePublisher import SongInfoSceneSignaturePublisher
 
 MANUFACTURER_ID = (int("0x7d", 0),)
 MESSAGE_START = (midi.SYSEX_START,) + MANUFACTURER_ID + (1, 1)
@@ -68,10 +69,12 @@ class SongInfo(ControlSurface):
     def setup_scenes(self):
         scenes = self.song().scenes
         for scene in scenes:
+            SongInfoSceneSignaturePublisher(self,scene)
             if scene.name and scene.name[0] == '{' and '}' in scene.name:
                 self.log_message('Found scene ' + scene.name)
                 index = int(SongInfo.get_scene_index(scene))
                 self._scenes[index - 1] = scene
+            else:
                 SongInfoScene(self, scene)
         for i, s in sorted(self._scenes.items()):
             self.log_message('Scene ' + str(i) + ' ' + s.name)
