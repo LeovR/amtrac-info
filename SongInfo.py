@@ -13,7 +13,6 @@ from _Framework.InputControlElement import *
 from _Framework.TransportComponent import TransportComponent
 from ableton.v2.control_surface import midi
 
-from SongInfoTrack import SongInfoTrack
 from SongInfoScene import SongInfoScene
 from SongInfoSceneSignaturePublisher import SongInfoSceneSignaturePublisher
 
@@ -25,7 +24,16 @@ NOTE_OFF_STATUS = 128
 NOTE_ON_STATUS = 144
 
 SCENE_OFFSET = 10
-SCENE_NOTES = range(SCENE_OFFSET, 50)
+SCENE_MAX_NOTES = 30
+SCENE_NOTES = range(SCENE_OFFSET, SCENE_OFFSET + SCENE_MAX_NOTES)
+
+CONTROL_OFFSET = SCENE_MAX_NOTES + SCENE_OFFSET + 1
+CONTROL_MAX_NOTES = 10
+CONTROL_NOTES = range(CONTROL_OFFSET, CONTROL_OFFSET + CONTROL_MAX_NOTES)
+
+NOTES = SCENE_NOTES + CONTROL_NOTES
+
+REPEAT_MIDI_NOTE = CONTROL_OFFSET
 
 STOP_MIDI_NOTE = 0
 
@@ -37,7 +45,7 @@ class SongInfo(ControlSurface):
     def __init__(self, c_instance):
         ControlSurface.__init__(self, c_instance)
         with self.component_guard():
-            self._current_tracks = []
+            self._repeat_tracks = []
             self._scenes = dict()
             self._c_instance = c_instance
             self.setup_scenes()
@@ -48,7 +56,6 @@ class SongInfo(ControlSurface):
             self.send_configuration_finished()
 
     def disconnect(self):
-        self._current_tracks = []
         self._scenes = dict()
         ControlSurface.disconnect(self)
 
@@ -69,7 +76,7 @@ class SongInfo(ControlSurface):
     def setup_scenes(self):
         scenes = self.song().scenes
         for scene in scenes:
-            SongInfoSceneSignaturePublisher(self,scene)
+            SongInfoSceneSignaturePublisher(self, scene)
             if scene.name and scene.name[0] == '{' and '}' in scene.name:
                 self.log_message('Found scene ' + scene.name)
                 index = int(SongInfo.get_scene_index(scene))
@@ -81,23 +88,27 @@ class SongInfo(ControlSurface):
 
     def setup_tracks(self):
         for t in self.song().tracks:
-            if self._current_tracks and t in self._current_tracks:
-                self.register_track(t)
-            else:
-                t.add_name_listener(self.setup_tracks)
-                self._current_tracks.append(t)
-                self.register_track(t)
+            self.register_track(t)
 
     def build_midi_map(self, midi_map_handle):
         ControlSurface.build_midi_map(self, midi_map_handle)
         script_handle = self._c_instance.handle()
-        for midi_no in SCENE_NOTES:
+        for midi_no in NOTES:
             Live.MidiMap.forward_midi_note(script_handle, midi_map_handle, 0, midi_no)
+
+    def toggle_repeat(self):
+        for t in self._repeat_tracks:
+            t.mute = not t.mute
 
     def receive_midi(self, midi_bytes):
         if midi_bytes[0] & 240 == NOTE_ON_STATUS:
             note = midi_bytes[1]
-            if note >= SCENE_OFFSET:
+            self.log_message(note)
+            if note in CONTROL_NOTES:
+                note_without_offset = note - CONTROL_OFFSET
+                if note_without_offset == 1:
+                    self.toggle_repeat()
+            elif note in SCENE_NOTES:
                 note_without_offset = note - SCENE_OFFSET
                 if note_without_offset in self._scenes:
                     self._scenes[note_without_offset].fire()
@@ -107,9 +118,9 @@ class SongInfo(ControlSurface):
             ControlSurface.receive_midi(self, midi_bytes)
 
     def register_track(self, t):
-        if t.name and t.name[0] == '{' and '}' in t.name:
-            self.log_message('Track ' + t.name)
-            SongInfoTrack(self, t)
+        if t.name and '{R}' in t.name:
+            self.log_message('Repeat-Track ' + t.name)
+            self._repeat_tracks.append(t)
 
     def setup_transport_control(self):
         is_momentary = True
