@@ -14,5 +14,7 @@ class SongInfoScene(ControlSurfaceComponent):
     def is_triggered_fired(self):
         if self._scene.is_triggered:
             self._parent.log_message(self._scene.name + " is triggered")
+            self._parent.send_message('{NP|' + self._scene.name.split(' ||')[0])
         else:
             self._parent.log_message(self._scene.name + " is playing")
+            self._parent.send_message('{CP|' + self._scene.name.split(' ||')[0])
