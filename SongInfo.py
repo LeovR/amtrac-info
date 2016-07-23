@@ -118,17 +118,14 @@ class SongInfo(ControlSurface):
             return
         for i, s in sorted(self._scenes.items()):
             message_text = '{SC||' + str(i) + '|' + (s.name.split('} ', 1)[1]).split(' ||')[0]
-            self.log_message(message_text)
             self.send_message(message_text)
 
     def send_configuration_start(self):
         message_text = '{CS|'
-        self.log_message(message_text)
         self.send_message(message_text)
 
     def send_configuration_finished(self):
         message_text = '{CF|'
-        self.log_message(message_text)
         self.send_message(message_text)
 
     @staticmethod
@@ -137,6 +134,7 @@ class SongInfo(ControlSurface):
         return MESSAGE_START + tuple(arr) + (midi.SYSEX_END,)
 
     def send_message(self, message_text):
+        self.log_message(message_text)
         sysex_message = self.make_message(message_text)
         self.log_message(str(sysex_message))
         self._send_midi(sysex_message)
