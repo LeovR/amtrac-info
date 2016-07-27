@@ -106,7 +106,7 @@ class SongInfo(ControlSurface):
             self.log_message(note)
             if note in CONTROL_NOTES:
                 note_without_offset = note - CONTROL_OFFSET
-                if note_without_offset == 1:
+                if note_without_offset == 0:
                     self.toggle_repeat()
             elif note in SCENE_NOTES:
                 note_without_offset = note - SCENE_OFFSET
