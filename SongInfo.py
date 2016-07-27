@@ -131,7 +131,7 @@ class SongInfo(ControlSurface):
         if not self._scenes:
             return
         for i, s in sorted(self._scenes.items()):
-            message_text = '{SC||' + str(i) + '|' + (s.name.split('} ', 1)[1]).split(' ||')[0]
+            message_text = '{SC||' + str(i) + '|' + (s.name.split('} ', 1)[1]).split(' ||')[0][:16]
             self.send_message(message_text)
 
     def send_configuration_start(self):
