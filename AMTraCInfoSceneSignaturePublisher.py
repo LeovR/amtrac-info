@@ -1,9 +1,9 @@
 from _Framework.ControlSurfaceComponent import ControlSurfaceComponent
 
 
-class SongInfoSceneSignaturePublisher(ControlSurfaceComponent):
+class AMTraCInfoSceneSignaturePublisher(ControlSurfaceComponent):
     __module__ = __name__
-    __doc__ = " SongInfoSceneSignaturePublisher "
+    __doc__ = " AMTraC-Info SceneSignaturePublisher "
 
     def __init__(self, parent, scene):
         ControlSurfaceComponent.__init__(self)

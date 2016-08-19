@@ -13,8 +13,8 @@ from _Framework.InputControlElement import *
 from _Framework.TransportComponent import TransportComponent
 from ableton.v2.control_surface import midi
 
-from SongInfoScene import SongInfoScene
-from SongInfoSceneSignaturePublisher import SongInfoSceneSignaturePublisher
+from AMTraCInfoScene import AMTraCInfoScene
+from AMTraCInfoSceneSignaturePublisher import AMTraCInfoSceneSignaturePublisher
 
 MANUFACTURER_ID = (int("0x7d", 0),)
 MESSAGE_START = (midi.SYSEX_START,) + MANUFACTURER_ID + (1, 1)
@@ -38,9 +38,9 @@ REPEAT_MIDI_NOTE = CONTROL_OFFSET
 STOP_MIDI_NOTE = 0
 
 
-class SongInfo(ControlSurface):
+class AMTraCInfo(ControlSurface):
     __module__ = __name__
-    __doc__ = " SongInfo "
+    __doc__ = " AMTraC-Info "
 
     def __init__(self, c_instance):
         ControlSurface.__init__(self, c_instance)
@@ -70,19 +70,19 @@ class SongInfo(ControlSurface):
 
     @staticmethod
     def get_scene_index(scene):
-        number = SongInfo.find_between(scene.name, '{', '}')
+        number = AMTraCInfo.find_between(scene.name, '{', '}')
         return number
 
     def setup_scenes(self):
         scenes = self.song().scenes
         for scene in scenes:
-            SongInfoSceneSignaturePublisher(self, scene)
+            AMTraCInfoSceneSignaturePublisher(self, scene)
             if scene.name and scene.name[0] == '{' and '}' in scene.name:
                 self.log_message('Found scene ' + scene.name)
-                index = int(SongInfo.get_scene_index(scene))
+                index = int(AMTraCInfo.get_scene_index(scene))
                 self._scenes[index - 1] = scene
             else:
-                SongInfoScene(self, scene)
+                AMTraCInfoScene(self, scene)
         for i, s in sorted(self._scenes.items()):
             self.log_message('Scene ' + str(i) + ' ' + s.name)
 

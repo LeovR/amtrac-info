@@ -1,9 +1,9 @@
 from _Framework.ControlSurfaceComponent import ControlSurfaceComponent
 
 
-class SongInfoScene(ControlSurfaceComponent):
+class AMTraCInfoScene(ControlSurfaceComponent):
     __module__ = __name__
-    __doc__ = " SongInfoScene "
+    __doc__ = " AMTraC-Info Scene "
 
     def __init__(self, parent, scene):
         ControlSurfaceComponent.__init__(self)
