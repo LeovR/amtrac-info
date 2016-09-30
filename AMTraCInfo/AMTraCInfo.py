@@ -30,6 +30,8 @@ SCENE_NOTES = range(SCENE_OFFSET, SCENE_OFFSET + SCENE_MAX_NOTES)
 CONTROL_OFFSET = SCENE_MAX_NOTES + SCENE_OFFSET + 1
 CONTROL_MAX_NOTES = 10
 CONTROL_NOTES = range(CONTROL_OFFSET, CONTROL_OFFSET + CONTROL_MAX_NOTES)
+CONTROL_REPEAT = 0
+CONTROL_START = 1
 
 NOTES = SCENE_NOTES + CONTROL_NOTES
 
@@ -51,13 +53,16 @@ class AMTraCInfo(ControlSurface):
             self.setup_scenes()
             self.setup_tracks()
             self.setup_transport_control()
-            self.send_configuration_start()
-            self.send_song_configuration()
-            self.send_configuration_finished()
+            self.send_complete_song_configuration()
 
     def disconnect(self):
         self._scenes = dict()
         ControlSurface.disconnect(self)
+
+    def send_complete_song_configuration(self):
+        self.send_configuration_start()
+        self.send_song_configuration()
+        self.send_configuration_finished()
 
     @staticmethod
     def find_between(s, first, last):
@@ -106,8 +111,10 @@ class AMTraCInfo(ControlSurface):
             self.log_message(note)
             if note in CONTROL_NOTES:
                 note_without_offset = note - CONTROL_OFFSET
-                if note_without_offset == 0:
+                if note_without_offset == CONTROL_REPEAT:
                     self.toggle_repeat()
+                elif note_without_offset == CONTROL_START:
+                    self.send_complete_song_configuration()
             elif note in SCENE_NOTES:
                 note_without_offset = note - SCENE_OFFSET
                 if note_without_offset in self._scenes:
