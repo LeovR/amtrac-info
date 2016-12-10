@@ -32,6 +32,7 @@ CONTROL_MAX_NOTES = 10
 CONTROL_NOTES = range(CONTROL_OFFSET, CONTROL_OFFSET + CONTROL_MAX_NOTES)
 CONTROL_REPEAT = 0
 CONTROL_START = 1
+CONTROL_CLIPS_STOP = 2
 
 NOTES = SCENE_NOTES + CONTROL_NOTES
 
@@ -115,6 +116,8 @@ class AMTraCInfo(ControlSurface):
                     self.toggle_repeat()
                 elif note_without_offset == CONTROL_START:
                     self.send_complete_song_configuration()
+                elif note_without_offset == CONTROL_CLIPS_STOP:
+                    self.stop_clips()
             elif note in SCENE_NOTES:
                 note_without_offset = note - SCENE_OFFSET
                 if note_without_offset in self._scenes:
@@ -123,6 +126,9 @@ class AMTraCInfo(ControlSurface):
                 ControlSurface.receive_midi(self, midi_bytes)
         else:
             ControlSurface.receive_midi(self, midi_bytes)
+
+    def stop_clips(self):
+        self.song().stop_all_clips()
 
     def register_track(self, t):
         if t.name and '{R}' in t.name:
