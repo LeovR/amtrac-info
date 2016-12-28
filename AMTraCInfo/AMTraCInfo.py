@@ -4,14 +4,13 @@
 
 from __future__ import with_statement
 
-from base64 import b64encode
-
 import Live
 from _Framework.ButtonElement import ButtonElement
 from _Framework.ControlSurface import ControlSurface
 from _Framework.InputControlElement import *
 from _Framework.TransportComponent import TransportComponent
 from ableton.v2.control_surface import midi
+from base64 import b64encode
 
 from AMTraCInfoScene import AMTraCInfoScene
 from AMTraCInfoSceneSignaturePublisher import AMTraCInfoSceneSignaturePublisher
@@ -112,21 +111,28 @@ class AMTraCInfo(ControlSurface):
             note = midi_bytes[1]
             self.log_message(note)
             if note in CONTROL_NOTES:
-                note_without_offset = note - CONTROL_OFFSET
-                if note_without_offset == CONTROL_REPEAT:
-                    self.toggle_repeat()
-                elif note_without_offset == CONTROL_START:
-                    self.send_complete_song_configuration()
-                elif note_without_offset == CONTROL_CLIPS_STOP:
-                    self.stop_clips()
+                self.handle_control_note(note)
             elif note in SCENE_NOTES:
-                note_without_offset = note - SCENE_OFFSET
-                if note_without_offset in self._scenes:
-                    self.start_scene(note_without_offset)
+                self.handle_scene_note(note)
             else:
                 ControlSurface.receive_midi(self, midi_bytes)
         else:
             ControlSurface.receive_midi(self, midi_bytes)
+
+    def handle_scene_note(self, note):
+        note_without_offset = note - SCENE_OFFSET
+        if note_without_offset in self._scenes:
+            self.start_scene(note_without_offset)
+
+    def handle_control_note(self, note):
+        note_without_offset = note - CONTROL_OFFSET
+        if note_without_offset == CONTROL_REPEAT:
+            self.toggle_repeat()
+        elif note_without_offset == CONTROL_START:
+            self.send_complete_song_configuration()
+        elif note_without_offset == CONTROL_CLIPS_STOP:
+            self.stop_clips()
+        elif note_without_offset == CONTROL_METRONOME:
 
     def start_scene(self, note_without_offset):
         self._scenes[note_without_offset].fire()
