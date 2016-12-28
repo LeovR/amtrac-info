@@ -1,5 +1,5 @@
 """
-# SongInfo
+# AMTraCInfo
 """
 
 from __future__ import with_statement
@@ -55,6 +55,7 @@ class AMTraCInfo(ControlSurface):
             self.setup_tracks()
             self.setup_transport_control()
             self.send_complete_song_configuration()
+            self._transport = None
 
     def disconnect(self):
         self._scenes = dict()
@@ -121,12 +122,14 @@ class AMTraCInfo(ControlSurface):
             elif note in SCENE_NOTES:
                 note_without_offset = note - SCENE_OFFSET
                 if note_without_offset in self._scenes:
-                    self._scenes[note_without_offset].fire()
+                    self.start_scene(note_without_offset)
             else:
                 ControlSurface.receive_midi(self, midi_bytes)
         else:
             ControlSurface.receive_midi(self, midi_bytes)
 
+    def start_scene(self, note_without_offset):
+        self._scenes[note_without_offset].fire()
     def stop_clips(self):
         self.song().stop_all_clips()
 
