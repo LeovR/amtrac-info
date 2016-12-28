@@ -32,6 +32,7 @@ CONTROL_NOTES = range(CONTROL_OFFSET, CONTROL_OFFSET + CONTROL_MAX_NOTES)
 CONTROL_REPEAT = 0
 CONTROL_START = 1
 CONTROL_CLIPS_STOP = 2
+CONTROL_METRONOME = 3
 
 NOTES = SCENE_NOTES + CONTROL_NOTES
 
@@ -141,6 +142,7 @@ class AMTraCInfo(ControlSurface):
         elif note_without_offset == CONTROL_CLIPS_STOP:
             self.stop_clips()
         elif note_without_offset == CONTROL_METRONOME:
+            self.song().metronome = not self.song().metronome
 
     def start_scene(self, note_without_offset):
         self._scenes[note_without_offset].fire()
