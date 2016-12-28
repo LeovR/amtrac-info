@@ -130,6 +130,8 @@ class AMTraCInfo(ControlSurface):
 
     def start_scene(self, note_without_offset):
         self._scenes[note_without_offset].fire()
+        self.song().metronome = True
+
     def stop_clips(self):
         self.song().stop_all_clips()
 
