@@ -54,6 +54,7 @@ class AMTraCInfo(ControlSurface):
             self.setup_tracks()
             self.setup_transport_control()
             self.send_complete_song_configuration()
+            self.setup_metronome()
             self._transport = None
 
     def disconnect(self):
@@ -63,7 +64,14 @@ class AMTraCInfo(ControlSurface):
     def send_complete_song_configuration(self):
         self.send_configuration_start()
         self.send_song_configuration()
+        self.send_metronome()
         self.send_configuration_finished()
+
+    def setup_metronome(self):
+        self.song().add_metronome_listener(self.metronome_changed)
+
+    def metronome_changed(self):
+        self.send_metronome()
 
     @staticmethod
     def find_between(s, first, last):
@@ -160,6 +168,10 @@ class AMTraCInfo(ControlSurface):
 
     def send_configuration_start(self):
         message_text = '{CS|'
+        self.send_message(message_text)
+
+    def send_metronome(self):
+        message_text = '{M|' + ('1' if self.song().metronome else '0')
         self.send_message(message_text)
 
     def send_configuration_finished(self):
