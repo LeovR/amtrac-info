@@ -34,7 +34,11 @@ CONTROL_START = 1
 CONTROL_CLIPS_STOP = 2
 CONTROL_METRONOME = 3
 
-NOTES = SCENE_NOTES + CONTROL_NOTES
+PAD_OFFSET = CONTROL_MAX_NOTES + CONTROL_OFFSET + 1
+PAD_MAX_NOTES = 12
+PAD_NOTES = range(PAD_OFFSET, PAD_OFFSET + PAD_MAX_NOTES)
+
+NOTES = SCENE_NOTES + CONTROL_NOTES + PAD_NOTES
 
 REPEAT_MIDI_NOTE = CONTROL_OFFSET
 
@@ -50,6 +54,7 @@ class AMTraCInfo(ControlSurface):
         with self.component_guard():
             self._repeat_tracks = []
             self._scenes = dict()
+            self._pads = dict()
             self._c_instance = c_instance
             self.setup_scenes()
             self.setup_tracks()
@@ -65,6 +70,7 @@ class AMTraCInfo(ControlSurface):
     def send_complete_song_configuration(self):
         self.send_configuration_start()
         self.send_song_configuration()
+        self.send_pad_configuration()
         self.send_metronome()
         self.send_configuration_finished()
 
@@ -92,7 +98,11 @@ class AMTraCInfo(ControlSurface):
         scenes = self.song().scenes
         for scene in scenes:
             AMTraCInfoSceneSignaturePublisher(self, scene)
-            if scene.name and scene.name[0] == '{' and '}' in scene.name:
+            if scene.name and scene.name.startswith('{P') and '}' in scene.name:
+                self.log_message('Found pad ' + scene.name)
+                index = int(AMTraCInfo.get_scene_index(scene)[1:])
+                self._pads[index - 1] = scene
+            elif scene.name and scene.name[0] == '{' and '}' in scene.name:
                 self.log_message('Found scene ' + scene.name)
                 index = int(AMTraCInfo.get_scene_index(scene))
                 self._scenes[index - 1] = scene
@@ -100,6 +110,8 @@ class AMTraCInfo(ControlSurface):
                 AMTraCInfoScene(self, scene)
         for i, s in sorted(self._scenes.items()):
             self.log_message('Scene ' + str(i) + ' ' + s.name)
+        for i, s in sorted(self._pads.items()):
+            self.log_message('Pad ' + str(i) + ' ' + s.name)
 
     def setup_tracks(self):
         for t in self.song().tracks:
@@ -123,6 +135,8 @@ class AMTraCInfo(ControlSurface):
                 self.handle_control_note(note)
             elif note in SCENE_NOTES:
                 self.handle_scene_note(note)
+            elif note in PAD_NOTES:
+                self.handle_pad_note(note)
             else:
                 ControlSurface.receive_midi(self, midi_bytes)
         else:
@@ -132,6 +146,11 @@ class AMTraCInfo(ControlSurface):
         note_without_offset = note - SCENE_OFFSET
         if note_without_offset in self._scenes:
             self.start_scene(note_without_offset)
+
+    def handle_pad_note(self, note):
+        note_without_offset = note - PAD_OFFSET
+        if note_without_offset in self._pads:
+            self.start_pad(note_without_offset)
 
     def handle_control_note(self, note):
         note_without_offset = note - CONTROL_OFFSET
@@ -147,6 +166,10 @@ class AMTraCInfo(ControlSurface):
     def start_scene(self, note_without_offset):
         self._scenes[note_without_offset].fire()
         self.song().metronome = True
+
+    def start_pad(self, note_without_offset):
+        self._pads[note_without_offset].fire()
+        self.song().metronome = False
 
     def stop_clips(self):
         self.song().stop_all_clips()
@@ -166,6 +189,13 @@ class AMTraCInfo(ControlSurface):
             return
         for i, s in sorted(self._scenes.items()):
             message_text = '{SC||' + str(i) + '|' + (s.name.split('} ', 1)[1]).split(' ||')[0][:16]
+            self.send_message(message_text)
+
+    def send_pad_configuration(self):
+        if not self._pads:
+            return
+        for i, s in sorted(self._pads.items()):
+            message_text = '{PC||' + str(i) + '|' + (s.name.split('} ', 1)[1]).split(' ||')[0][:16]
             self.send_message(message_text)
 
     def send_configuration_start(self):
