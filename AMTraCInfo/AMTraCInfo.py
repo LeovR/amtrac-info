@@ -102,6 +102,9 @@ class AMTraCInfo(ControlSurface):
                 self.log_message('Found pad ' + scene.name)
                 index = int(AMTraCInfo.get_scene_index(scene)[1:])
                 self._pads[index - 1] = scene
+            elif scene.name and scene.name.startswith('{C') and '}' in scene.name:
+                self.log_message('Found control ' + scene.name)
+                self._stop_scene = scene
             elif scene.name and scene.name[0] == '{' and '}' in scene.name:
                 self.log_message('Found scene ' + scene.name)
                 index = int(AMTraCInfo.get_scene_index(scene))
@@ -159,9 +162,12 @@ class AMTraCInfo(ControlSurface):
         elif note_without_offset == CONTROL_START:
             self.send_complete_song_configuration()
         elif note_without_offset == CONTROL_CLIPS_STOP:
-            self.stop_clips()
+            self.launch_stop_clip()
         elif note_without_offset == CONTROL_METRONOME:
             self.song().metronome = not self.song().metronome
+
+    def launch_stop_clip(self):
+        self._stop_scene.fire()
 
     def start_scene(self, note_without_offset):
         self._scenes[note_without_offset].fire()
