@@ -109,8 +109,7 @@ class AMTraCInfo(ControlSurface):
                 self.log_message('Found scene ' + scene.name)
                 index = int(AMTraCInfo.get_scene_index(scene))
                 self._scenes[index - 1] = scene
-            else:
-                AMTraCInfoScene(self, scene)
+            AMTraCInfoScene(self, scene)
         for i, s in sorted(self._scenes.items()):
             self.log_message('Scene ' + str(i) + ' ' + s.name)
         for i, s in sorted(self._pads.items()):
