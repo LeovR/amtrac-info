@@ -167,6 +167,8 @@ class AMTraCInfo(ControlSurface):
             self.song().metronome = not self.song().metronome
 
     def launch_stop_clip(self):
+        if not self._stop_scene:
+            return
         self._stop_scene.fire()
 
     def start_scene(self, note_without_offset):
